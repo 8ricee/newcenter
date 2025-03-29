@@ -64,7 +64,7 @@ export default function Header() {
             <Link href="/login">Đăng nhập</Link>
           </Button>
           <Button size="sm" asChild className="hidden md:inline-flex">
-            <Link href="/login">Đăng ký</Link>
+            <Link href="/register">Đăng ký</Link>
           </Button>
 
           {/* Mobile Navigation */}
@@ -95,7 +95,7 @@ export default function Header() {
                     <Link href="/login">Đăng nhập</Link>
                   </Button>
                   <Button asChild>
-                    <Link href="/login">Đăng ký</Link>
+                    <Link href="/register">Đăng ký</Link>
                   </Button>
                 </div>
               </nav>

@@ -1,5 +1,7 @@
-import NextAuth from "next-auth"
-import { authOptions } from "@/lib/auth"
+// src/auth.ts
+import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authOptions)
-
+export function auth() {
+  return getServerSession(authOptions);
+}

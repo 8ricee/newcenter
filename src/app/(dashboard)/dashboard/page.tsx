@@ -12,17 +12,6 @@ export const metadata: Metadata = {
   description: "Dashboard của Language Center",
 }
 
-interface UpcomingClass {
-  id: string;
-  startDate: Date;
-  endDate: Date;
-  course: {
-    id: string;
-    title: string;
-  };
-  // Thêm các trường khác từ model Schedule và Course nếu cần
-}
-
 export default async function DashboardPage() {
   const session = await auth()
 
@@ -36,7 +25,7 @@ export default async function DashboardPage() {
   let coursesCount = 0
   let schedulesCount = 0
   let unreadMessagesCount = 0
-  let upcomingClasses: UpcomingClass[] = [] // Khai báo kiểu cho upcomingClasses
+  let upcomingClasses = []
 
   if (isTeacher) {
     const teacher = await db.teacher.findFirst({
@@ -52,7 +41,7 @@ export default async function DashboardPage() {
         where: { teacherId: teacher.id },
       })
 
-      const upcomingSchedules = await db.schedule.findMany({
+      upcomingClasses = await db.schedule.findMany({
         where: {
           teacherId: teacher.id,
           startDate: {
@@ -67,17 +56,6 @@ export default async function DashboardPage() {
         },
         take: 5,
       })
-
-      upcomingClasses = upcomingSchedules.map((schedule) => ({
-        id: schedule.id,
-        startDate: schedule.startDate,
-        endDate: schedule.endDate,
-        course: {
-          id: schedule.course.id,
-          title: schedule.course.title,
-        },
-        // Thêm các trường khác nếu cần
-      }));
     }
   }
 
@@ -112,16 +90,7 @@ export default async function DashboardPage() {
         },
       })
 
-      upcomingClasses = enrollments.map((enrollment) => ({
-        id: enrollment.schedule.id,
-        startDate: enrollment.schedule.startDate,
-        endDate: enrollment.schedule.endDate,
-        course: {
-          id: enrollment.schedule.course.id,
-          title: enrollment.schedule.course.title,
-        },
-        // Thêm các trường khác nếu cần
-      }));
+      upcomingClasses = enrollments.map((enrollment) => enrollment.schedule)
     }
   }
 
@@ -198,3 +167,4 @@ export default async function DashboardPage() {
     </div>
   )
 }
+

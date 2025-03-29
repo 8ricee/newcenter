@@ -234,11 +234,10 @@ export function CourseForm({ teachers, initialData }: CourseFormProps) {
                   name="slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Slug</FormLabel>
+                      <FormLabel>URL</FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="ten-khoa-hoc" />
                       </FormControl>
-                      <FormDescription>Được sử dụng cho URL của khóa học</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
