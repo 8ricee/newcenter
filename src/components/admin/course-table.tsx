@@ -21,14 +21,34 @@ import { Input } from "@/components/ui/input"
 import { MoreHorizontal, Search } from "lucide-react"
 import { deleteCourse } from "@/lib/actions/course"
 
-export function CourseTable({ courses }) {
+interface Course {
+  id: string;
+  title: string;
+  language: string;
+  level: "Cơ bản" | "Trung cấp" | "Nâng cao" | string;
+  price: number;
+  promotionPrice?: number | null;
+  hasPromotion: boolean;
+  teacher: {
+    user: {
+      name: string;
+    };
+  };
+  format: string;
+}
+
+interface CourseTableProps {
+  courses: Course[];
+}
+
+export function CourseTable({ courses }: CourseTableProps) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [courseToDelete, setCourseToDelete] = useState(null)
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null)
 
   const filteredCourses = courses.filter(
-    (course) =>
+    (course: Course) =>
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.language.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.level.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -80,7 +100,7 @@ export function CourseTable({ courses }) {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredCourses.map((course) => (
+              filteredCourses.map((course: Course) => (
                 <TableRow key={course.id}>
                   <TableCell>
                     <div className="font-medium">{course.title}</div>
@@ -164,4 +184,3 @@ export function CourseTable({ courses }) {
     </div>
   )
 }
-

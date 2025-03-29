@@ -5,8 +5,32 @@ import { vi } from "date-fns/locale"
 import { Calendar, Clock, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
 
-export function DashboardUpcomingClasses({ classes, role }) {
+interface ClassItem {
+    id: string;
+    course: {
+        id: string; // Added the 'id' property
+        image?: string | null;
+        title: string;
+    };
+    currentStudents: number;
+    maxStudents: number;
+    startDate: string;
+    startTime: string;
+    endTime: string;
+    location?: string | null;
+    room?: string | null;
+}
+
+type Role = "STUDENT" | "TEACHER";
+
+interface DashboardUpcomingClassesProps {
+    classes: ClassItem[];
+    role: Role;
+}
+
+export function DashboardUpcomingClasses({ classes, role }: DashboardUpcomingClassesProps) {
     if (!classes || classes.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-10">
@@ -22,12 +46,12 @@ export function DashboardUpcomingClasses({ classes, role }) {
 
     return (
         <div className="space-y-4">
-            {classes.map((classItem) => (
+            {classes.map((classItem: ClassItem) => (
                 <div key={classItem.id} className="flex flex-col md:flex-row gap-4 p-4 border rounded-lg">
                     <div className="md:w-1/4">
                         <div className="aspect-video rounded-md bg-muted/30 flex items-center justify-center overflow-hidden">
                             {classItem.course.image ? (
-                                <img
+                                <Image
                                     src={classItem.course.image || "/placeholder.svg"}
                                     alt={classItem.course.title}
                                     className="w-full h-full object-cover"
@@ -86,4 +110,3 @@ export function DashboardUpcomingClasses({ classes, role }) {
         </div>
     )
 }
-

@@ -6,13 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Send } from "lucide-react"
 import { sendMessage } from "@/lib/actions/message"
+import { FormEvent, KeyboardEvent } from "react" // Import necessary types
 
-export function MessageInput({ receiverId }) {
+interface MessageInputProps {
+  receiverId: string;
+}
+
+export function MessageInput({ receiverId }: MessageInputProps) {
   const router = useRouter()
   const [content, setContent] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
     if (!content.trim()) return
@@ -29,7 +34,7 @@ export function MessageInput({ receiverId }) {
     }
   }
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSubmit(e)
@@ -52,4 +57,3 @@ export function MessageInput({ receiverId }) {
     </form>
   )
 }
-

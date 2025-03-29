@@ -8,12 +8,29 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { MoreHorizontal, Search } from "lucide-react"
+import Image from "next/image"
 
-export function StudentTable({ students }) {
+interface Student {
+  id: string;
+  user: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+  phone?: string | null;
+  address?: string | null;
+  enrollments: unknown[]; // Assuming it's an array, refine if the type is known
+}
+
+interface StudentTableProps {
+  students: Student[];
+}
+
+export function StudentTable({ students }: StudentTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
 
   const filteredStudents = students.filter(
-    (student) =>
+    (student: Student) =>
       student.user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
@@ -51,13 +68,13 @@ export function StudentTable({ students }) {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredStudents.map((student) => (
+              filteredStudents.map((student: Student) => (
                 <TableRow key={student.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                         {student.user.image ? (
-                          <img
+                          <Image
                             src={student.user.image || "/placeholder.svg"}
                             alt={student.user.name || "Student"}
                             className="w-10 h-10 rounded-full object-cover"
@@ -111,4 +128,3 @@ export function StudentTable({ students }) {
     </div>
   )
 }
-

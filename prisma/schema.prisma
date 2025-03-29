@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -19,13 +22,13 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  student          Student?
-  teacher          Teacher?
-  admin            Admin?
-  accounts         Account[]
-  sessions         Session[]
-  sentMessages     Message[] @relation("SentMessages")
-  receivedMessages Message[] @relation("ReceivedMessages")
+  student       Student?
+  teacher       Teacher?
+  admin         Admin?
+  accounts      Account[]
+  sessions      Session[]
+  sentMessages     Message[]  @relation("SentMessages")
+  receivedMessages Message[]  @relation("ReceivedMessages")
 }
 
 model Account {
@@ -72,17 +75,17 @@ enum Role {
 }
 
 model Student {
-  id        String    @id @default(cuid())
-  userId    String    @unique
+  id        String   @id @default(cuid())
+  userId    String   @unique
   phone     String?
   address   String?
   birthDate DateTime?
-  bio       String?   @db.Text
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  bio       String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollments Enrollment[]
 }
 
@@ -101,9 +104,9 @@ model Teacher {
   updatedAt      DateTime @updatedAt
 
   // Relations
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courses   Course[]
-  schedules Schedule[]
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courses        Course[]
+  schedules      Schedule[]
 }
 
 model Admin {
@@ -114,7 +117,7 @@ model Admin {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Course {
@@ -145,13 +148,13 @@ model Course {
   updatedAt        DateTime @updatedAt
 
   // Relations
-  teacher      Teacher       @relation(fields: [teacherId], references: [id])
-  teacherId    String
-  curriculum   Curriculum[]
-  faq          FAQ[]
-  testimonials Testimonial[]
-  schedules    Schedule[]
-  enrollments  Enrollment[]
+  teacher          Teacher  @relation(fields: [teacherId], references: [id])
+  teacherId        String
+  curriculum       Curriculum[]
+  faq              FAQ[]
+  testimonials     Testimonial[]
+  schedules        Schedule[]
+  enrollments      Enrollment[]
 }
 
 model Curriculum {
@@ -163,8 +166,8 @@ model Curriculum {
   updatedAt DateTime @updatedAt
 
   // Relations
-  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons Lesson[]
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons   Lesson[]
 }
 
 model Lesson {
@@ -178,7 +181,7 @@ model Lesson {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  curriculum Curriculum @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+  curriculum   Curriculum @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
 }
 
 model FAQ {
@@ -190,7 +193,7 @@ model FAQ {
   updatedAt DateTime @updatedAt
 
   // Relations
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }
 
 model Schedule {
@@ -200,8 +203,8 @@ model Schedule {
   startDate       DateTime
   endDate         DateTime
   daysOfWeek      String[] // e.g. ["Monday", "Wednesday"]
-  startTime       String // e.g. "18:00"
-  endTime         String // e.g. "19:30"
+  startTime       String   // e.g. "18:00"
+  endTime         String   // e.g. "19:30"
   location        String?
   room            String?
   maxStudents     Int
@@ -211,25 +214,25 @@ model Schedule {
   updatedAt       DateTime @updatedAt
 
   // Relations
-  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  teacher     Teacher      @relation(fields: [teacherId], references: [id])
-  enrollments Enrollment[]
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacher         Teacher  @relation(fields: [teacherId], references: [id])
+  enrollments     Enrollment[]
 }
 
 model Enrollment {
-  id            String   @id @default(cuid())
-  studentId     String
-  courseId      String
-  scheduleId    String
-  status        String   @default("Đang học") // "Đang học", "Hoàn thành", "Đã hủy"
-  paymentStatus String   @default("Chưa thanh toán") // "Chưa thanh toán", "Đã thanh toán"
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(cuid())
+  studentId  String
+  courseId   String
+  scheduleId String
+  status     String   @default("Đang học") // "Đang học", "Hoàn thành", "Đã hủy"
+  paymentStatus String @default("Chưa thanh toán") // "Chưa thanh toán", "Đã thanh toán"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 }
 
 model Testimonial {
@@ -245,7 +248,7 @@ model Testimonial {
   updatedAt DateTime @updatedAt
 
   // Relations
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }
 
 model BlogPost {
@@ -265,15 +268,15 @@ model BlogPost {
 }
 
 model Message {
-  id         String   @id @default(cuid())
-  content    String   @db.Text
-  senderId   String
-  receiverId String
-  read       Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  senderId    String
+  receiverId  String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 }

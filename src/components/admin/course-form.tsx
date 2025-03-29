@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, SubmitHandler } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -13,6 +13,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createCourse, updateCourse } from "@/lib/actions/course"
+
+// Định nghĩa interface cho dữ liệu của giảng viên (dựa trên schema Prisma của bạn)
+interface Teacher {
+  id: string;
+  user: {
+    name: string | null;
+  };
+}
+
+// Định nghĩa type cho form values dựa trên formSchema
+type CourseFormValues = z.infer<typeof formSchema>;
+
+// Định nghĩa interface cho initialData (dựa trên CourseFormValues hoặc schema Prisma)
+interface InitialCourseData extends CourseFormValues {
+  id?: string; // Thêm id nếu là trường hợp cập nhật
+}
+
+interface CourseFormProps {
+  teachers: Teacher[];
+  initialData?: InitialCourseData;
+}
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Tiêu đề là bắt buộc" }),
@@ -40,14 +61,14 @@ const formSchema = z.object({
   teacherId: z.string().min(1, { message: "Giảng viên là bắt buộc" }),
 })
 
-export function CourseForm({ teachers, initialData }) {
+export function CourseForm({ teachers, initialData }: CourseFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [features, setFeatures] = useState(initialData?.features || [""])
-  const [requirements, setRequirements] = useState(initialData?.requirements || [""])
-  const [outcomes, setOutcomes] = useState(initialData?.outcomes || [""])
+  const [features, setFeatures] = useState<string[]>(initialData?.features || [""])
+  const [requirements, setRequirements] = useState<string[]>(initialData?.requirements || [""])
+  const [outcomes, setOutcomes] = useState<string[]>(initialData?.outcomes || [""])
 
-  const form = useForm({
+  const form = useForm<CourseFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
       title: "",
@@ -76,17 +97,21 @@ export function CourseForm({ teachers, initialData }) {
     },
   })
 
-  const onSubmit = async (values) => {
+  const onSubmit: SubmitHandler<CourseFormValues> = async (values) => {
     try {
       setIsLoading(true)
 
       // Filter out empty strings
-      values.features = features.filter((feature) => feature.trim() !== "")
-      values.requirements = requirements.filter((req) => req.trim() !== "")
-      values.outcomes = outcomes.filter((outcome) => outcome.trim() !== "")
+      values.features = features.filter((feature: string) => feature.trim() !== "")
+      values.requirements = requirements.filter((req: string) => req.trim() !== "")
+      values.outcomes = outcomes.filter((outcome: string) => outcome.trim() !== "")
 
       if (initialData) {
-        await updateCourse(initialData.id, values)
+        if (initialData?.id) {
+          await updateCourse(initialData.id, values)
+        } else {
+          throw new Error("Course ID is undefined.")
+        }
       } else {
         await createCourse(values)
       }
@@ -100,15 +125,17 @@ export function CourseForm({ teachers, initialData }) {
     }
   }
 
-  const handleTitleChange = (e) => {
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value
-    if (!initialData) {
+    // Chỉ tạo slug nếu initialData không có id (tức là tạo mới)
+    if (!initialData?.id) {
       const slug = title
         .toLowerCase()
         .replace(/[^\w\s]/gi, "")
         .replace(/\s+/g, "-")
       form.setValue("slug", slug)
     }
+    // Nếu initialData có id (tức là cập nhật), chúng ta không thay đổi slug ở đây.
   }
 
   const handlePriceChange = () => {
@@ -126,13 +153,13 @@ export function CourseForm({ teachers, initialData }) {
     setFeatures([...features, ""])
   }
 
-  const updateFeature = (index, value) => {
+  const updateFeature = (index: number, value: string) => {
     const newFeatures = [...features]
     newFeatures[index] = value
     setFeatures(newFeatures)
   }
 
-  const removeFeature = (index) => {
+  const removeFeature = (index: number) => {
     const newFeatures = [...features]
     newFeatures.splice(index, 1)
     setFeatures(newFeatures)
@@ -142,13 +169,13 @@ export function CourseForm({ teachers, initialData }) {
     setRequirements([...requirements, ""])
   }
 
-  const updateRequirement = (index, value) => {
+  const updateRequirement = (index: number, value: string) => {
     const newRequirements = [...requirements]
     newRequirements[index] = value
     setRequirements(newRequirements)
   }
 
-  const removeRequirement = (index) => {
+  const removeRequirement = (index: number) => {
     const newRequirements = [...requirements]
     newRequirements.splice(index, 1)
     setRequirements(newRequirements)
@@ -158,13 +185,13 @@ export function CourseForm({ teachers, initialData }) {
     setOutcomes([...outcomes, ""])
   }
 
-  const updateOutcome = (index, value) => {
+  const updateOutcome = (index: number, value: string) => {
     const newOutcomes = [...outcomes]
     newOutcomes[index] = value
     setOutcomes(newOutcomes)
   }
 
-  const removeOutcome = (index) => {
+  const removeOutcome = (index: number) => {
     const newOutcomes = [...outcomes]
     newOutcomes.splice(index, 1)
     setOutcomes(newOutcomes)
@@ -442,7 +469,7 @@ export function CourseForm({ teachers, initialData }) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {teachers.map((teacher) => (
+                          {teachers.map((teacher: Teacher) => (
                             <SelectItem key={teacher.id} value={teacher.id}>
                               {teacher.user.name}
                             </SelectItem>
@@ -654,4 +681,3 @@ export function CourseForm({ teachers, initialData }) {
     </div>
   )
 }
-

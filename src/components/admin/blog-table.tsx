@@ -11,14 +11,29 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input"
 import { MoreHorizontal, Search } from "lucide-react"
 
-export function BlogTable({ posts }) {
+interface Post {
+  id: string;
+  title: string;
+  category: string;
+  tags: string[];
+  excerpt: string;
+  createdAt: string;
+  published: boolean;
+  slug: string;
+}
+
+interface BlogTableProps {
+  posts: Post[];
+}
+
+export function BlogTable({ posts }: BlogTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
 
   const filteredPosts = posts.filter(
-    (post) =>
+    (post: Post) =>
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase())),
+      post.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
   return (
@@ -54,7 +69,7 @@ export function BlogTable({ posts }) {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredPosts.map((post) => (
+              filteredPosts.map((post: Post) => (
                 <TableRow key={post.id}>
                   <TableCell>
                     <div className="font-medium">{post.title}</div>
@@ -101,4 +116,3 @@ export function BlogTable({ posts }) {
     </div>
   )
 }
-

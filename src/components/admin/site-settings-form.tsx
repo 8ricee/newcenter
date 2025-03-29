@@ -2,13 +2,13 @@
 
 import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, SubmitHandler } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner" // Import toast from sonner
 
 const formSchema = z.object({
   siteName: z.string().min(1, { message: "Tên trang web là bắt buộc" }),
@@ -21,10 +21,13 @@ const formSchema = z.object({
   instagramUrl: z.string().url({ message: "URL Instagram không hợp lệ" }).optional().or(z.literal("")),
 })
 
+// Define the type for the form values
+type SiteSettingsFormValues = z.infer<typeof formSchema>;
+
 export function SiteSettingsForm() {
   const [isLoading, setIsLoading] = useState(false)
 
-  const form = useForm({
+  const form = useForm<SiteSettingsFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       siteName: "Language Center",
@@ -38,21 +41,19 @@ export function SiteSettingsForm() {
     },
   })
 
-  async function onSubmit(values) {
+  const onSubmit: SubmitHandler<SiteSettingsFormValues> = async () => { // Removed the unused 'values' parameter
     try {
       setIsLoading(true)
       // Giả lập API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      toast({
-        title: "Cài đặt đã được lưu",
+      toast.success("Cài đặt đã được lưu", {
         description: "Các thay đổi đã được cập nhật thành công.",
       })
     } catch (error) {
-      toast({
-        title: "Đã xảy ra lỗi",
+      console.error(error)
+      toast.error("Đã xảy ra lỗi", {
         description: "Không thể lưu cài đặt. Vui lòng thử lại sau.",
-        variant: "destructive",
       })
     } finally {
       setIsLoading(false)
@@ -186,4 +187,3 @@ export function SiteSettingsForm() {
     </Form>
   )
 }
-

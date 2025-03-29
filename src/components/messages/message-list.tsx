@@ -4,9 +4,22 @@ import { useEffect, useRef } from "react"
 import { formatDistanceToNow } from "date-fns"
 import { vi } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import { RefObject } from "react" // Import RefObject
 
-export function MessageList({ messages, currentUserId }) {
-  const messagesEndRef = useRef(null)
+interface Message {
+  id: string;
+  senderId: string | number;
+  content: string;
+  createdAt: string;
+}
+
+interface MessageListProps {
+  messages: Message[];
+  currentUserId: string | number;
+}
+
+export function MessageList({ messages, currentUserId }: MessageListProps) {
+  const messagesEndRef: RefObject<HTMLDivElement | null> = useRef(null) // Allow null for initial value
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -19,7 +32,7 @@ export function MessageList({ messages, currentUserId }) {
           <p className="text-muted-foreground">Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện!</p>
         </div>
       ) : (
-        messages.map((message) => {
+        messages.map((message: Message) => {
           const isCurrentUser = message.senderId === currentUserId
 
           return (
@@ -48,4 +61,3 @@ export function MessageList({ messages, currentUserId }) {
     </div>
   )
 }
-

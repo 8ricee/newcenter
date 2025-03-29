@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { headers } from "next/headers"
 import { NextResponse } from "next/server"
 import type Stripe from "stripe"
@@ -7,7 +8,7 @@ import { stripe } from "@/lib/stripe"
 
 export async function POST(req: Request) {
   const body = await req.text()
-  const signature = headers().get("Stripe-Signature") as string
+  const signature = (await headers()).get("Stripe-Signature") as string
 
   let event: Stripe.Event
 

@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { getMessages } from "@/lib/actions/message"
 import { MessageList } from "@/components/messages/message-list"
 import { MessageInput } from "@/components/messages/message-input"
+import Image from "next/image"
 
 export const metadata: Metadata = {
     title: "Tin nhắn | Language Center",
@@ -40,7 +41,7 @@ export default async function MessageDetailPage({
             <div className="p-4 border-b flex items-center space-x-2">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     {otherUser.image ? (
-                        <img
+                        <Image
                             src={otherUser.image || "/placeholder.svg"}
                             alt={otherUser.name || "User"}
                             className="w-10 h-10 rounded-full object-cover"

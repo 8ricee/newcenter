@@ -36,7 +36,7 @@ export default async function EditCoursePage({
         <p className="text-muted-foreground">Chỉnh sửa thông tin khóa học {course.title}</p>
       </div>
 
-      <CourseForm teachers={teachers} initialData={course} />
+      <CourseForm teachers={teachers} />
     </div>
   )
 }

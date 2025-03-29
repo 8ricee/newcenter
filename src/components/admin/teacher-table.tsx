@@ -8,12 +8,29 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { MoreHorizontal, Search } from "lucide-react"
+import Image from "next/image"
 
-export function TeacherTable({ teachers }) {
+interface Teacher {
+    id: string;
+    user: {
+        name?: string | null;
+        email?: string | null;
+        image?: string | null;
+    };
+    position?: string | null;
+    specialization?: string | null;
+    courses: unknown[]; // Assuming it's an array, refine if the type is known
+}
+
+interface TeacherTableProps {
+    teachers: Teacher[];
+}
+
+export function TeacherTable({ teachers }: TeacherTableProps) {
     const [searchTerm, setSearchTerm] = useState("")
 
     const filteredTeachers = teachers.filter(
-        (teacher) =>
+        (teacher: Teacher) =>
             teacher.user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             teacher.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             teacher.specialization?.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -52,13 +69,13 @@ export function TeacherTable({ teachers }) {
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            filteredTeachers.map((teacher) => (
+                            filteredTeachers.map((teacher: Teacher) => (
                                 <TableRow key={teacher.id}>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                                                 {teacher.user.image ? (
-                                                    <img
+                                                    <Image
                                                         src={teacher.user.image || "/placeholder.svg"}
                                                         alt={teacher.user.name || "Teacher"}
                                                         className="w-10 h-10 rounded-full object-cover"
@@ -112,4 +129,3 @@ export function TeacherTable({ teachers }) {
         </div>
     )
 }
-

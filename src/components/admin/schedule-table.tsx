@@ -11,17 +11,41 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input"
 import { MoreHorizontal, Search } from "lucide-react"
 
-export function ScheduleTable({ schedules }) {
+interface Schedule {
+  id: string;
+  course: {
+    title: string;
+    level: string;
+  };
+  teacher: {
+    user: {
+      name: string;
+    };
+  };
+  location?: string | null;
+  room?: string | null;
+  startDate: string;
+  startTime: string;
+  endTime: string;
+  currentStudents: number;
+  maxStudents: number;
+}
+
+interface ScheduleTableProps {
+  schedules: Schedule[];
+}
+
+export function ScheduleTable({ schedules }: ScheduleTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
 
   const filteredSchedules = schedules.filter(
-    (schedule) =>
+    (schedule: Schedule) =>
       schedule.course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       schedule.teacher.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       schedule.location?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const getStatusBadge = (schedule) => {
+  const getStatusBadge = (schedule: Schedule) => {
     if (schedule.currentStudents >= schedule.maxStudents) {
       return <Badge variant="destructive">Hết chỗ</Badge>
     } else if (schedule.currentStudents >= schedule.maxStudents * 0.8) {
@@ -66,7 +90,7 @@ export function ScheduleTable({ schedules }) {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredSchedules.map((schedule) => (
+              filteredSchedules.map((schedule: Schedule) => (
                 <TableRow key={schedule.id}>
                   <TableCell>
                     <div className="font-medium">{schedule.course.title}</div>
@@ -121,4 +145,3 @@ export function ScheduleTable({ schedules }) {
     </div>
   )
 }
-

@@ -21,7 +21,7 @@ export default async function NewCoursePage() {
         <p className="text-muted-foreground">Tạo khóa học mới cho Language Center</p>
       </div>
 
-      <CourseForm teachers={teachers} />
+      <CourseForm teachers={teachers} initialData={undefined} />
     </div>
   )
 }

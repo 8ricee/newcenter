@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from "react"
 
-export function DashboardWelcome({ name, role }) {
+type Role = "TEACHER" | "STUDENT" | "ADMIN";
+
+interface DashboardWelcomeProps {
+    name?: string;
+    role: Role;
+}
+
+export function DashboardWelcome({ name, role }: DashboardWelcomeProps) {
     const [greeting, setGreeting] = useState("")
 
     useEffect(() => {
@@ -29,4 +36,3 @@ export function DashboardWelcome({ name, role }) {
         </div>
     )
 }
-

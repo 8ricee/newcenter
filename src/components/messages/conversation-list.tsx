@@ -4,13 +4,31 @@ import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { vi } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
-export function ConversationList({ conversations }) {
+interface Conversation {
+  user: {
+    id: string;
+    image?: string | null;
+    name?: string | null;
+  };
+  unreadCount: number;
+  latestMessage?: {
+    createdAt: string;
+    content?: string | null;
+  } | null;
+}
+
+interface ConversationListProps {
+  conversations: Conversation[];
+}
+
+export function ConversationList({ conversations }: ConversationListProps) {
   const router = useRouter()
 
   return (
     <div className="space-y-2">
-      {conversations.map((conversation) => (
+      {conversations.map((conversation: Conversation) => (
         <div
           key={conversation.user.id}
           className={cn(
@@ -21,7 +39,7 @@ export function ConversationList({ conversations }) {
         >
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
             {conversation.user.image ? (
-              <img
+              <Image
                 src={conversation.user.image || "/placeholder.svg"}
                 alt={conversation.user.name || "User"}
                 className="w-10 h-10 rounded-full object-cover"
@@ -58,4 +76,3 @@ export function ConversationList({ conversations }) {
     </div>
   )
 }
-

@@ -5,7 +5,25 @@ import { vi } from "date-fns/locale"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-export function AdminRecentEnrollments({ enrollments }) {
+interface Enrollment {
+    id: string;
+    student: {
+        user: {
+            name: string;
+        };
+    };
+    course: {
+        title: string;
+    };
+    paymentStatus: "Đã thanh toán" | "Chưa thanh toán" | string; // Thêm các trạng thái khác nếu cần
+    createdAt: string; // Hoặc Date nếu bạn muốn làm việc với đối tượng Date
+}
+
+interface AdminRecentEnrollmentsProps {
+    enrollments: Enrollment[];
+}
+
+export function AdminRecentEnrollments({ enrollments }: AdminRecentEnrollmentsProps) {
     return (
         <div className="rounded-md border">
             <Table>
@@ -50,4 +68,3 @@ export function AdminRecentEnrollments({ enrollments }) {
         </div>
     )
 }
-

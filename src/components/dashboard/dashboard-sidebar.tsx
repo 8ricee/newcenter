@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { LayoutDashboard, BookOpen, Calendar, MessageSquare, Settings, LogOut, Users } from "lucide-react"
 import { signOut } from "next-auth/react"
+import Image from "next/image"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
@@ -85,7 +86,7 @@ export function DashboardSidebar() {
         <div className="flex items-center gap-3 mb-6 p-3 rounded-md bg-muted/50">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
             {session?.user?.image ? (
-              <img
+              <Image
                 src={session.user.image || "/placeholder.svg"}
                 alt={session.user.name || "User"}
                 className="w-10 h-10 rounded-full object-cover"
