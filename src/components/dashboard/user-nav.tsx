@@ -10,7 +10,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenuButton } from "@/components/ui/sidebar"
-import { LogOut, Settings, User } from "lucide-react"
+import { Check, LogOut, Settings, User } from "lucide-react"
 import { signOut } from "next-auth/react"
 import Link from "next/link"
 
@@ -61,6 +61,18 @@ export function UserNav({ user }: UserNavProps) {
                         <Link href="/dashboard/profile">
                             <User className="mr-2 h-4 w-4" />
                             <span>Hồ sơ</span>
+                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <Link href="/dashboard/settings">
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Cài đặt</span>
+                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <Link href="/dashboard/certificates">
+                            <Check className="mr-2 h-4 w-4" />
+                            <span>Chứng nhận</span>
                         </Link>
                     </DropdownMenuItem>
                     {user.role === "ADMIN" && (
