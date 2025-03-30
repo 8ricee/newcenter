@@ -1,29 +1,20 @@
-import type { ReactNode } from "react"
-import { redirect } from "next/navigation"
+import type React from "react"
 import { getServerSession } from "next-auth"
+import { redirect } from "next/navigation"
+import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
 import { authOptions } from "@/lib/auth"
-import { Sidebar } from "@/components/dashboard/sidebar"
-import { Header } from "@/components/dashboard/header"
 
-interface DashboardLayoutProps {
-  children: ReactNode
-}
-
-export default async function DashboardLayout({ children }: DashboardLayoutProps) {
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const session = await getServerSession(authOptions)
 
   if (!session) {
     redirect("/login")
   }
 
-  return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <Header user={session.user} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/20">{children}</main>
-      </div>
-    </div>
-  )
+  return <DashboardSidebar user={session.user}>{children}</DashboardSidebar>
 }
 

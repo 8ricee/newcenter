@@ -1,8 +1,12 @@
 import type React from "react"
 import { Inter } from "next/font/google"
-import "./globals.css"
+// import "./globals.css"
+import Header from "@/components/header"
+import Footer from "@/components/footer"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from 'sonner';
+import { authOptions } from "@/lib/auth"
+import { getServerSession } from "next-auth"
 
 const inter = Inter({ subsets: ["latin", "vietnamese"], variable: "--font-inter" })
 
@@ -62,6 +66,8 @@ export const metadata = {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
 
+  const session = await getServerSession(authOptions)
+
   return (
     <html lang="vi" suppressHydrationWarning>
       <head>
@@ -75,10 +81,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className={`${inter.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <div className="relative flex min-h-screen flex-col">
+            <Header user={session?.user ?? null} />
             <main className="flex-1">
               {children}
               <Toaster />
             </main>
+            <Footer />
           </div>
         </ThemeProvider>
       </body>
