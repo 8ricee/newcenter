@@ -56,8 +56,8 @@ export default function Header({ user }: HeaderProps) {
                   <Link href={route.href} legacyBehavior passHref>
                     <NavigationMenuLink
                       className={cn(
-                        "px-4 py-2 text-sm font-medium hover:text-primary",
-                        pathname === route.href ? "text-primary" : "text-muted-foreground"
+                        "px-4 py-2 text-sm font-medium hover:text-accent",
+                        pathname === route.href ? "text-accent" : "text-muted-foreground"
                       )}
                     >
                       {route.label}
