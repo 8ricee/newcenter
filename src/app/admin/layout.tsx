@@ -12,7 +12,6 @@ interface AdminLayoutProps {
 
 export default async function AdminLayout({ children }: AdminLayoutProps) {
   const session = await getServerSession(authOptions)
-  console.log("SESSION:", session)
 
   if (!session || session.user.role !== Role.ADMIN) {
     redirect("/")

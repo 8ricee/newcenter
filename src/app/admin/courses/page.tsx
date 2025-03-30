@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 }
 
 export default async function CoursesPage() {
-  const courses = await db.course.findMany({
+  const rawCourses = await db.course.findMany({
     include: {
       teacher: {
         include: {
@@ -23,6 +23,17 @@ export default async function CoursesPage() {
       createdAt: "desc",
     },
   })
+
+  const courses = rawCourses.map((course) => ({
+    ...course,
+    teacher: {
+      ...course.teacher,
+      user: {
+        ...course.teacher.user,
+        name: course.teacher.user.name ?? "Không tên", // fallback nếu tên là null
+      },
+    },
+  }))
 
   return (
     <div className="space-y-6">
@@ -43,4 +54,3 @@ export default async function CoursesPage() {
     </div>
   )
 }
-

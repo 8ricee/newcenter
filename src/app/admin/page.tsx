@@ -24,7 +24,8 @@ export default async function AdminPage() {
 
   const schedulesCount = await db.schedule.count()
 
-  const recentEnrollments = await db.enrollment.findMany({
+  // Fetch raw enrollments
+  const rawRecentEnrollments = await db.enrollment.findMany({
     take: 5,
     orderBy: { createdAt: "desc" },
     include: {
@@ -38,7 +39,22 @@ export default async function AdminPage() {
     },
   })
 
-  // Calculate total revenue
+  // Normalize for frontend safety
+  const recentEnrollments = rawRecentEnrollments.map((enrollment) => ({
+    ...enrollment,
+    createdAt: enrollment.createdAt.toISOString(),
+    student: {
+      ...enrollment.student,
+      user: {
+        ...enrollment.student.user,
+        name: enrollment.student.user.name ?? "Không tên",
+        email: enrollment.student.user.email ?? "Không có email",
+        image: enrollment.student.user.image ?? "/placeholder-avatar.png",
+      },
+    },
+  }))
+
+  // Doanh thu
   const paidEnrollments = await db.enrollment.findMany({
     where: { paymentStatus: "Đã thanh toán" },
     include: {
@@ -130,4 +146,3 @@ export default async function AdminPage() {
     </div>
   )
 }
-

@@ -14,7 +14,18 @@ import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
 
-export default function Header() {
+interface UserProps {
+  id: string
+  name?: string | null
+  email?: string | null
+  role?: string | null
+}
+
+interface HeaderProps {
+  user: UserProps | null
+}
+
+export default function Header({ user }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
 
@@ -37,7 +48,6 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
         <div className="hidden md:flex">
           <NavigationMenu>
             <NavigationMenuList>
@@ -47,7 +57,7 @@ export default function Header() {
                     <NavigationMenuLink
                       className={cn(
                         "px-4 py-2 text-sm font-medium hover:text-primary",
-                        pathname === route.href ? "text-primary" : "text-muted-foreground",
+                        pathname === route.href ? "text-primary" : "text-muted-foreground"
                       )}
                     >
                       {route.label}
@@ -60,14 +70,28 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild className="hidden md:inline-flex">
-            <Link href="/login">Đăng nhập</Link>
-          </Button>
-          <Button size="sm" asChild className="hidden md:inline-flex">
-            <Link href="/register">Đăng ký</Link>
-          </Button>
+          {!user ? (
+            <>
+              <Button variant="outline" size="sm" asChild className="hidden md:inline-flex">
+                <Link href="/login">Đăng nhập</Link>
+              </Button>
+              <Button size="sm" asChild className="hidden md:inline-flex">
+                <Link href="/register">Đăng ký</Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button size="sm" asChild className="hidden md:inline-flex">
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+              {user.role === "ADMIN" && (
+                <Button size="sm" variant="secondary" asChild className="hidden md:inline-flex">
+                  <Link href="/admin">Admin</Link>
+                </Button>
+              )}
+            </>
+          )}
 
-          {/* Mobile Navigation */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild className="md:hidden">
               <Button variant="ghost" size="icon">
@@ -83,7 +107,7 @@ export default function Header() {
                     href={route.href}
                     className={cn(
                       "text-md font-medium transition-colors hover:text-primary",
-                      pathname === route.href ? "text-primary" : "text-muted-foreground",
+                      pathname === route.href ? "text-primary" : "text-muted-foreground"
                     )}
                     onClick={() => setIsOpen(false)}
                   >
@@ -91,12 +115,27 @@ export default function Header() {
                   </Link>
                 ))}
                 <div className="flex flex-col gap-2 mt-4">
-                  <Button variant="outline" asChild>
-                    <Link href="/login">Đăng nhập</Link>
-                  </Button>
-                  <Button asChild>
-                    <Link href="/register">Đăng ký</Link>
-                  </Button>
+                  {!user ? (
+                    <>
+                      <Button variant="outline" asChild>
+                        <Link href="/login">Đăng nhập</Link>
+                      </Button>
+                      <Button asChild>
+                        <Link href="/register">Đăng ký</Link>
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button asChild>
+                        <Link href="/dashboard">Dashboard</Link>
+                      </Button>
+                      {user.role === "ADMIN" && (
+                        <Button variant="secondary" asChild>
+                          <Link href="/admin">Admin</Link>
+                        </Button>
+                      )}
+                    </>
+                  )}
                 </div>
               </nav>
             </SheetContent>
@@ -106,4 +145,3 @@ export default function Header() {
     </header>
   )
 }
-

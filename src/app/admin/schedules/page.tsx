@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 }
 
 export default async function SchedulesPage() {
-  const schedules = await db.schedule.findMany({
+  const rawSchedules = await db.schedule.findMany({
     include: {
       course: true,
       teacher: {
@@ -24,6 +24,23 @@ export default async function SchedulesPage() {
       startDate: "asc",
     },
   })
+
+  const schedules = rawSchedules.map((schedule) => ({
+    ...schedule,
+    startDate: schedule.startDate.toISOString(),
+    endDate: schedule.endDate?.toISOString() ?? null,
+    createdAt: schedule.createdAt.toISOString(),
+    updatedAt: schedule.updatedAt.toISOString(),
+    teacher: {
+      ...schedule.teacher,
+      user: {
+        ...schedule.teacher.user,
+        name: schedule.teacher.user.name ?? "Không tên",
+        email: schedule.teacher.user.email ?? "Không có email",
+        image: schedule.teacher.user.image ?? "/placeholder-avatar.png",
+      },
+    },
+  }))
 
   return (
     <div className="space-y-6">
@@ -44,4 +61,3 @@ export default async function SchedulesPage() {
     </div>
   )
 }
-

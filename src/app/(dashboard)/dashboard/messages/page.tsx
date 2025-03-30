@@ -16,7 +16,7 @@ export default async function MessagesPage() {
     redirect("/login")
   }
 
-  const { conversations, error } = await getConversations()
+  const { conversations: rawConversations, error } = await getConversations()
 
   if (error) {
     return (
@@ -26,6 +26,25 @@ export default async function MessagesPage() {
     )
   }
 
+  // Chuẩn hóa dữ liệu conversation để đảm bảo type khớp
+  const conversations = (rawConversations ?? [])
+    .filter((conv) => conv.user !== null)
+    .map((conv) => ({
+      ...conv,
+      user: {
+        id: conv.user!.id,
+        name: conv.user!.name ?? "Không tên",
+        image: conv.user!.image ?? "/placeholder-avatar.png",
+      },
+      latestMessage: conv.latestMessage
+        ? {
+          ...conv.latestMessage,
+          createdAt: conv.latestMessage.createdAt.toISOString(),
+          updatedAt: conv.latestMessage.updatedAt.toISOString(),
+        }
+        : null,
+    }))
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
@@ -34,7 +53,7 @@ export default async function MessagesPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {conversations && conversations.length > 0 ? (
+        {conversations.length > 0 ? (
           <ConversationList conversations={conversations} />
         ) : (
           <div className="flex items-center justify-center h-full">
@@ -45,4 +64,3 @@ export default async function MessagesPage() {
     </div>
   )
 }
-

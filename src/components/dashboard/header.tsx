@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bell, Menu, Settings, User, LogOut } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Sidebar } from "./sidebar"
+import { Sidebar } from "@/components/dashboard/sidebar"
 
 interface HeaderProps {
     user: {
