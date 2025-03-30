@@ -7,15 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { updateUser } from "@/lib/actions/user"
@@ -31,6 +23,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
 
+    // Create form schema based on user role
     const formSchema = z.object({
         name: z.string().min(1, { message: "Tên là bắt buộc" }),
         email: z.string().email({ message: "Email không hợp lệ" }),
@@ -53,6 +46,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 : {}),
     })
 
+    // Create form
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -63,9 +57,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
             ...(user.role === "STUDENT" && user.student
                 ? {
                     phoneNumber: user.student.phoneNumber || "",
-                    dateOfBirth: user.student.dateOfBirth
-                        ? new Date(user.student.dateOfBirth).toISOString().split("T")[0]
-                        : "",
+                    dateOfBirth: user.student.dateOfBirth ? new Date(user.student.dateOfBirth).toISOString().split("T")[0] : "",
                     address: user.student.address || "",
                 }
                 : user.role === "TEACHER" && user.teacher
@@ -91,18 +83,17 @@ export function ProfileForm({ user }: ProfileFormProps) {
         })
 
         const result = await updateUser(user.id, formData)
+
         setIsLoading(false)
 
         if (result.error) {
-            toast.error(
-                typeof result.error === "string"
-                    ? result.error
-                    : "Đã xảy ra lỗi khi cập nhật thông tin"
+            return toast.error(
+                typeof result.error === "string" ? result.error : "Đã xảy ra lỗi khi cập nhật thông tin"
             )
-            return
         }
 
         toast.success("Thông tin cá nhân đã được cập nhật")
+
         router.refresh()
     }
 
@@ -148,6 +139,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                 <FormControl>
                                     <Input placeholder="Nhập email" {...field} disabled />
                                 </FormControl>
+                                <FormDescription>Email không thể thay đổi</FormDescription>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -177,7 +169,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                     <FormItem>
                                         <FormLabel>Số điện thoại</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Nhập số điện thoại" {...field} value={field.value as string} />
+                                            <Input placeholder="Nhập số điện thoại" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -191,7 +183,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                     <FormItem>
                                         <FormLabel>Ngày sinh</FormLabel>
                                         <FormControl>
-                                            <Input type="date" {...field} value={field.value as string} />
+                                            <Input type="date" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -205,7 +197,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                     <FormItem className="md:col-span-2">
                                         <FormLabel>Địa chỉ</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Nhập địa chỉ" {...field} value={field.value as string} />
+                                            <Input placeholder="Nhập địa chỉ" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -223,7 +215,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                     <FormItem>
                                         <FormLabel>Số điện thoại</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Nhập số điện thoại" {...field} value={field.value as string} />
+                                            <Input placeholder="Nhập số điện thoại" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -237,7 +229,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                     <FormItem>
                                         <FormLabel>Số năm kinh nghiệm</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Nhập số năm kinh nghiệm" {...field} value={field.value as string} />
+                                            <Input type="number" placeholder="Nhập số năm kinh nghiệm" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -251,7 +243,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                     <FormItem>
                                         <FormLabel>Học vấn</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Nhập thông tin học vấn" {...field} value={field.value as string} />
+                                            <Input placeholder="Nhập thông tin học vấn" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -265,7 +257,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                     <FormItem>
                                         <FormLabel>Chuyên môn</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Nhập chuyên môn (phân cách bằng dấu phẩy)" {...field} value={field.value as string} />
+                                            <Input placeholder="Nhập chuyên môn (phân cách bằng dấu phẩy)" {...field} />
                                         </FormControl>
                                         <FormDescription>Ví dụ: Tiếng Anh giao tiếp, IELTS, TOEIC</FormDescription>
                                         <FormMessage />
@@ -280,7 +272,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                     <FormItem className="md:col-span-2">
                                         <FormLabel>Giới thiệu</FormLabel>
                                         <FormControl>
-                                            <Textarea placeholder="Nhập thông tin giới thiệu" className="min-h-[120px]" {...field} value={field.value as string} />
+                                            <Textarea placeholder="Nhập thông tin giới thiệu" className="min-h-[120px]" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
