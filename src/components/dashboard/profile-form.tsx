@@ -148,7 +148,6 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                 <FormControl>
                                     <Input placeholder="Nhập email" {...field} disabled />
                                 </FormControl>
-                                <FormDescription>Email không thể thay đổi</FormDescription>
                                 <FormMessage />
                             </FormItem>
                         )}
