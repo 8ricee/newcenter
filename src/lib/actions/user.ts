@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { Role } from "@prisma/client";
-import { hash } from "bcrypt";
+import { hash } from "bcryptjs";
 import { authOptions } from "@/lib/auth";
 
 const userSchema = z.object({
