@@ -136,7 +136,7 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground">Đây là trang tổng quan giảng dạy của bạn.</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <DashboardCard title="Lớp học đang dạy" value={activeClasses} icon={BookOpen} />
           <DashboardCard title="Tổng số lớp học" value={classes.length} icon={GraduationCap} />
           <DashboardCard title="Tổng số học viên" value={totalStudents} icon={Users} />

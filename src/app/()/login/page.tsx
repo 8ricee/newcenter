@@ -115,14 +115,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted py-12">
+    <div className="flex min-h-screen items-center justify-center bg-background py-12">
       <div className="container px-4 md:px-6">
         <div className="mx-auto grid w-full max-w-md gap-6">
           <Tabs
             defaultValue={tab === "register" ? "register" : "login"}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-2 bg-gradient-hero">
               <TabsTrigger value="login">Đăng nhập</TabsTrigger>
               <TabsTrigger value="register">Đăng ký</TabsTrigger>
             </TabsList>
@@ -171,7 +171,7 @@ export default function LoginPage() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                            className="absolute right-0 top-1/2 -translate-y-1/2"
                             onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? (
@@ -301,7 +301,7 @@ export default function LoginPage() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                            className="absolute right-0 top-1/2 -translate-y-1/2"
                             onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? (
