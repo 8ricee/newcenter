@@ -1,194 +1,221 @@
-"use server"
+"use server";
 
-import { db } from "@/lib/db"
-import { revalidatePath } from "next/cache"
-import { auth } from "@/auth"
+import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-export async function sendMessage(receiverId: string, content: string) {
+interface CreateConversationParams {
+  participantIds: string[];
+  message: string;
+  senderId: string;
+}
+
+interface SendMessageParams {
+  conversationId: string;
+  senderId: string;
+  content: string;
+}
+
+export async function getConversations(userId: string) {
   try {
-    const session = await auth()
+    const conversations = await db.conversation.findMany({
+      where: {
+        participants: {
+          some: {
+            userId,
+          },
+        },
+      },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+                role: true,
+              },
+            },
+          },
+        },
+        messages: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
 
-    if (!session?.user?.id) {
-      return { error: "Bạn cần đăng nhập để gửi tin nhắn" }
+    return { conversations };
+  } catch (error) {
+    console.error("Error fetching conversations:", error);
+    return { error: "Đã xảy ra lỗi khi lấy danh sách cuộc trò chuyện" };
+  }
+}
+
+export async function getConversationById(id: string) {
+  try {
+    const conversation = await db.conversation.findUnique({
+      where: { id },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+                role: true,
+              },
+            },
+          },
+        },
+        messages: {
+          orderBy: {
+            createdAt: "asc",
+          },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      return { error: "Không tìm thấy cuộc trò chuyện" };
     }
 
+    return { conversation };
+  } catch (error) {
+    console.error("Error fetching conversation:", error);
+    return { error: "Đã xảy ra lỗi khi lấy thông tin cuộc trò chuyện" };
+  }
+}
+
+export async function createConversation({
+  participantIds,
+  message,
+  senderId,
+}: CreateConversationParams) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return { error: "Bạn cần đăng nhập để thực hiện hành động này" };
+  }
+
+  try {
+    // Check if conversation already exists between these users
+    const existingConversation = await db.conversation.findFirst({
+      where: {
+        AND: participantIds.map((id) => ({
+          participants: {
+            some: {
+              userId: id,
+            },
+          },
+        })),
+      },
+      include: {
+        participants: true,
+      },
+    });
+
+    if (
+      existingConversation &&
+      existingConversation.participants.length === participantIds.length
+    ) {
+      // Conversation exists, return it
+      return { conversation: existingConversation };
+    }
+
+    // Create new conversation
+    const conversation = await db.conversation.create({
+      data: {
+        participants: {
+          create: participantIds.map((userId) => ({
+            userId,
+          })),
+        },
+        messages: {
+          create: {
+            content: message,
+            senderId,
+          },
+        },
+      },
+    });
+
+    revalidatePath("/dashboard/messages");
+    return { conversation };
+  } catch (error) {
+    console.error("Error creating conversation:", error);
+    return { error: "Đã xảy ra lỗi khi tạo cuộc trò chuyện" };
+  }
+}
+
+export async function sendMessage({
+  conversationId,
+  senderId,
+  content,
+}: SendMessageParams) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return { error: "Bạn cần đăng nhập để thực hiện hành động này" };
+  }
+
+  try {
+    // Check if user is part of the conversation
+    const conversation = await db.conversation.findFirst({
+      where: {
+        id: conversationId,
+        participants: {
+          some: {
+            userId: senderId,
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      return {
+        error: "Bạn không có quyền gửi tin nhắn trong cuộc trò chuyện này",
+      };
+    }
+
+    // Create message
     const message = await db.message.create({
       data: {
         content,
-        senderId: session.user.id,
-        receiverId,
+        senderId,
+        conversationId,
       },
-    })
+    });
 
-    revalidatePath(`/dashboard/messages/${receiverId}`)
-    return { success: true, message }
+    // Update conversation's updatedAt
+    await db.conversation.update({
+      where: { id: conversationId },
+      data: { updatedAt: new Date() },
+    });
+
+    revalidatePath(`/dashboard/messages/${conversationId}`);
+    return { message };
   } catch (error) {
-    console.error(error)
-    return { error: "Đã xảy ra lỗi khi gửi tin nhắn" }
+    console.error("Error sending message:", error);
+    return { error: "Đã xảy ra lỗi khi gửi tin nhắn" };
   }
 }
-
-export async function markAsRead(messageId: string) {
-  try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
-      return { error: "Bạn cần đăng nhập để đánh dấu tin nhắn đã đọc" }
-    }
-
-    const message = await db.message.findUnique({
-      where: { id: messageId },
-    })
-
-    if (!message || message.receiverId !== session.user.id) {
-      return { error: "Không có quyền đánh dấu tin nhắn này" }
-    }
-
-    await db.message.update({
-      where: { id: messageId },
-      data: { read: true },
-    })
-
-    revalidatePath(`/dashboard/messages`)
-    revalidatePath(`/dashboard/messages/${message.senderId}`)
-    return { success: true }
-  } catch (error) {
-    console.error(error)
-    return { error: "Đã xảy ra lỗi khi đánh dấu tin nhắn đã đọc" }
-  }
-}
-
-export async function getConversations() {
-  try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
-      return { error: "Bạn cần đăng nhập để xem tin nhắn" }
-    }
-
-    // Get all users that the current user has exchanged messages with
-    const sentMessages = await db.message.findMany({
-      where: { senderId: session.user.id },
-      select: { receiverId: true },
-      distinct: ["receiverId"],
-    })
-
-    const receivedMessages = await db.message.findMany({
-      where: { receiverId: session.user.id },
-      select: { senderId: true },
-      distinct: ["senderId"],
-    })
-
-    // Combine unique user IDs
-    const userIds = new Set([...sentMessages.map((m) => m.receiverId), ...receivedMessages.map((m) => m.senderId)])
-
-    // Get user details and latest message for each conversation
-    const conversations = await Promise.all(
-      Array.from(userIds).map(async (userId) => {
-        const user = await db.user.findUnique({
-          where: { id: userId },
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            role: true,
-          },
-        })
-
-        const latestMessage = await db.message.findFirst({
-          where: {
-            OR: [
-              { senderId: session.user.id, receiverId: userId },
-              { senderId: userId, receiverId: session.user.id },
-            ],
-          },
-          orderBy: { createdAt: "desc" },
-        })
-
-        const unreadCount = await db.message.count({
-          where: {
-            senderId: userId,
-            receiverId: session.user.id,
-            read: false,
-          },
-        })
-
-        return {
-          user,
-          latestMessage,
-          unreadCount,
-        }
-      }),
-    )
-
-    return { conversations }
-  } catch (error) {
-    console.error(error)
-    return { error: "Đã xảy ra lỗi khi lấy danh sách cuộc trò chuyện" }
-  }
-}
-
-export async function getMessages(otherUserId: string) {
-  try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
-      return { error: "Bạn cần đăng nhập để xem tin nhắn" }
-    }
-
-    const messages = await db.message.findMany({
-      where: {
-        OR: [
-          { senderId: session.user.id, receiverId: otherUserId },
-          { senderId: otherUserId, receiverId: session.user.id },
-        ],
-      },
-      orderBy: { createdAt: "asc" },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-        receiver: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-      },
-    })
-
-    // Mark all unread messages as read
-    await db.message.updateMany({
-      where: {
-        senderId: otherUserId,
-        receiverId: session.user.id,
-        read: false,
-      },
-      data: { read: true },
-    })
-
-    const otherUser = await db.user.findUnique({
-      where: { id: otherUserId },
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        role: true,
-      },
-    })
-
-    revalidatePath(`/dashboard/messages`)
-    revalidatePath(`/dashboard/messages/${otherUserId}`)
-
-    return { messages, otherUser }
-  } catch (error) {
-    console.error(error)
-    return { error: "Đã xảy ra lỗi khi lấy tin nhắn" }
-  }
-}
-

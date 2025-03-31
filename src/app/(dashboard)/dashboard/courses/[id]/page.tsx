@@ -198,6 +198,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
                             <Image
                                 src={course.image || "/placeholder.svg"}
                                 alt={course.title}
+                                width={40}
+                                height={40}
                                 className="object-cover w-full h-full"
                             />
                             <div className="absolute inset-0 bg-black/30 flex items-center justify-center">

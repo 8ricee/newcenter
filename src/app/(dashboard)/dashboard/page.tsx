@@ -20,7 +20,6 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
 
   if (!session) redirect("/login")
-  if (session.user.role === "ADMIN") redirect("/admin")
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },

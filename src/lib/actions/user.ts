@@ -1,3 +1,4 @@
+// src/lib/actions/user.ts
 "use server";
 
 import { db } from "@/lib/db";
@@ -36,8 +37,8 @@ const teacherSchema = z.object({
 export async function getUsers() {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== "ADMIN") {
-    return { error: "Bạn không có quyền thực hiện hành động này" };
+  if (!session) {
+    return { error: "Bạn cần đăng nhập để thực hiện hành động này" };
   }
 
   try {
@@ -268,7 +269,10 @@ export async function updateUser(id: string, formData: FormData) {
         bio: formData.get("bio"),
         specialties: formData.get("specialties"),
         education: formData.get("education"),
-        experience: formData.get("experience"),
+        experience: z.preprocess(
+          (val) => (val === "" ? undefined : val),
+          z.coerce.number().optional()
+        ),
       });
 
       if (teacherData.success) {
@@ -409,5 +413,40 @@ export async function getCurrentUserProfile() {
   } catch (error) {
     console.error("Error fetching current user profile:", error);
     return { error: "Đã xảy ra lỗi khi lấy thông tin người dùng" };
+  }
+}
+
+export async function searchUsers(query: string) {
+  try {
+    const users = await db.user.findMany({
+      where: {
+        OR: [
+          {
+            name: {
+              contains: query,
+              mode: "insensitive",
+            },
+          },
+          {
+            email: {
+              contains: query,
+              mode: "insensitive",
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+      },
+      take: 10, // Giới hạn số lượng kết quả trả về
+    });
+
+    return { users };
+  } catch (error) {
+    console.error("Error searching users:", error);
+    return { error: "Đã xảy ra lỗi khi tìm kiếm người dùng" };
   }
 }

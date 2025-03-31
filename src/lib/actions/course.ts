@@ -1,188 +1,284 @@
-"use server"
+"use server";
 
-import { db } from "@/lib/db"
-import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
-import { z } from "zod"
+import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
+import { CourseStatus } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { z } from "zod";
+import { authOptions } from "@/lib/auth";
 
-const CourseSchema = z.object({
+const courseSchema = z.object({
   title: z.string().min(1, { message: "Tiêu đề là bắt buộc" }),
-  slug: z.string().min(1, { message: "Slug là bắt buộc" }),
-  description: z.string().min(1, { message: "Mô tả ngắn là bắt buộc" }),
-  fullDescription: z.string().optional(),
+  description: z.string().optional(),
+  level: z.string().min(1, { message: "Cấp độ là bắt buộc" }),
+  duration: z.coerce.number().min(1, { message: "Thời lượng phải lớn hơn 0" }),
+  lessons: z.coerce.number().min(1, { message: "Số buổi học phải lớn hơn 0" }),
+  price: z.coerce.number().min(0, { message: "Giá không được âm" }),
+  teacherId: z.string().optional(),
   image: z.string().optional(),
-  level: z.string().min(1, { message: "Trình độ là bắt buộc" }),
-  language: z.string().min(1, { message: "Ngôn ngữ là bắt buộc" }),
-  duration: z.string().min(1, { message: "Thời lượng là bắt buộc" }),
-  lessons: z.coerce.number().min(1, { message: "Số buổi học là bắt buộc" }),
-  hoursPerLesson: z.coerce.number().min(0.5, { message: "Số giờ mỗi buổi là bắt buộc" }),
-  schedule: z.string().optional(),
-  groupSize: z.string().optional(),
-  format: z.string().min(1, { message: "Hình thức học là bắt buộc" }),
-  price: z.coerce.number().min(0, { message: "Giá là bắt buộc" }),
-  promotionPrice: z.coerce.number().optional(),
-  hasPromotion: z.boolean().default(false),
-  promotionPercent: z.coerce.number().optional(),
-  isPopular: z.boolean().default(false),
-  isNew: z.boolean().default(false),
-  features: z.array(z.string()).default([]),
-  requirements: z.array(z.string()).default([]),
-  outcomes: z.array(z.string()).default([]),
-  teacherId: z.string().min(1, { message: "Giảng viên là bắt buộc" }),
-})
+  status: z.enum(["UPCOMING", "ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
+});
 
-export type CourseFormValues = z.infer<typeof CourseSchema>
+export async function getCourses() {
+  try {
+    const courses = await db.course.findMany({
+      include: {
+        teacher: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+        classes: true,
+        enrollments: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
-export async function createCourse(values: CourseFormValues) {
-  const validatedFields = CourseSchema.safeParse(values)
+    return { courses };
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return { error: "Đã xảy ra lỗi khi lấy danh sách khóa học" };
+  }
+}
+
+export async function getCourseById(id: string) {
+  try {
+    const course = await db.course.findUnique({
+      where: { id },
+      include: {
+        teacher: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+        classes: {
+          include: {
+            teacher: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+            enrollments: true,
+          },
+        },
+        enrollments: {
+          include: {
+            student: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    email: true,
+                    image: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!course) {
+      return { error: "Không tìm thấy khóa học" };
+    }
+
+    return { course };
+  } catch (error) {
+    console.error("Error fetching course:", error);
+    return { error: "Đã xảy ra lỗi khi lấy thông tin khóa học" };
+  }
+}
+
+export async function createCourse(formData: FormData) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== "ADMIN") {
+    return { error: "Bạn không có quyền thực hiện hành động này" };
+  }
+
+  const validatedFields = courseSchema.safeParse({
+    title: formData.get("title"),
+    description: formData.get("description"),
+    level: formData.get("level"),
+    duration: formData.get("duration"),
+    lessons: formData.get("lessons"),
+    price: formData.get("price"),
+    teacherId: formData.get("teacherId"),
+    image: formData.get("image"),
+    status: formData.get("status"),
+  });
 
   if (!validatedFields.success) {
-    return { error: validatedFields.error.flatten().fieldErrors }
+    return {
+      error: validatedFields.error.flatten().fieldErrors,
+    };
   }
 
   const {
     title,
-    slug,
     description,
-    fullDescription,
-    image,
     level,
-    language,
     duration,
     lessons,
-    hoursPerLesson,
-    schedule,
-    groupSize,
-    format,
     price,
-    promotionPrice,
-    hasPromotion,
-    promotionPercent,
-    isPopular,
-    isNew,
-    features,
-    requirements,
-    outcomes,
     teacherId,
-  } = validatedFields.data
+    image,
+    status,
+  } = validatedFields.data;
 
   try {
-    await db.course.create({
+    const course = await db.course.create({
       data: {
         title,
-        slug,
         description,
-        fullDescription,
-        image,
         level,
-        language,
         duration,
         lessons,
-        hoursPerLesson,
-        schedule,
-        groupSize,
-        format,
         price,
-        promotionPrice,
-        hasPromotion,
-        promotionPercent,
-        isPopular,
-        isNew,
-        features,
-        requirements,
-        outcomes,
-        teacherId,
+        teacherId: teacherId || undefined,
+        image,
+        status: (status as CourseStatus) || CourseStatus.UPCOMING,
       },
-    })
+    });
 
-    revalidatePath("/admin/courses")
-    redirect("/admin/courses")
+    revalidatePath("/admin/courses");
+    return { success: true, course };
   } catch (error) {
-    return { error: "Đã xảy ra lỗi khi tạo khóa học." }
+    console.error("Error creating course:", error);
+    return { error: "Đã xảy ra lỗi khi tạo khóa học" };
   }
 }
 
-export async function updateCourse(courseId: string, values: CourseFormValues) {
-  const validatedFields = CourseSchema.safeParse(values)
+export async function updateCourse(id: string, formData: FormData) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== "ADMIN") {
+    return { error: "Bạn không có quyền thực hiện hành động này" };
+  }
+
+  const validatedFields = courseSchema.safeParse({
+    title: formData.get("title"),
+    description: formData.get("description"),
+    level: formData.get("level"),
+    duration: formData.get("duration"),
+    lessons: formData.get("lessons"),
+    price: formData.get("price"),
+    teacherId: formData.get("teacherId"),
+    image: formData.get("image"),
+    status: formData.get("status"),
+  });
 
   if (!validatedFields.success) {
-    return { error: validatedFields.error.flatten().fieldErrors }
+    return {
+      error: validatedFields.error.flatten().fieldErrors,
+    };
   }
 
   const {
     title,
-    slug,
     description,
-    fullDescription,
-    image,
     level,
-    language,
     duration,
     lessons,
-    hoursPerLesson,
-    schedule,
-    groupSize,
-    format,
     price,
-    promotionPrice,
-    hasPromotion,
-    promotionPercent,
-    isPopular,
-    isNew,
-    features,
-    requirements,
-    outcomes,
     teacherId,
-  } = validatedFields.data
+    image,
+    status,
+  } = validatedFields.data;
 
   try {
-    await db.course.update({
-      where: { id: courseId },
+    const course = await db.course.update({
+      where: { id },
       data: {
         title,
-        slug,
         description,
-        fullDescription,
-        image,
         level,
-        language,
         duration,
         lessons,
-        hoursPerLesson,
-        schedule,
-        groupSize,
-        format,
         price,
-        promotionPrice,
-        hasPromotion,
-        promotionPercent,
-        isPopular,
-        isNew,
-        features,
-        requirements,
-        outcomes,
-        teacherId,
+        teacherId: teacherId || null,
+        image,
+        status: (status as CourseStatus) || undefined,
       },
-    })
+    });
 
-    revalidatePath(`/admin/courses/${courseId}`)
-    revalidatePath(`/courses/${slug}`)
-    redirect("/admin/courses")
+    revalidatePath(`/admin/courses/${id}`);
+    revalidatePath("/admin/courses");
+    return { success: true, course };
   } catch (error) {
-    return { error: "Đã xảy ra lỗi khi cập nhật khóa học." }
+    console.error("Error updating course:", error);
+    return { error: "Đã xảy ra lỗi khi cập nhật khóa học" };
   }
 }
 
-export async function deleteCourse(courseId: string) {
+export async function deleteCourse(id: string) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== "ADMIN") {
+    return { error: "Bạn không có quyền thực hiện hành động này" };
+  }
+
   try {
     await db.course.delete({
-      where: { id: courseId },
-    })
+      where: { id },
+    });
 
-    revalidatePath("/admin/courses")
-    return { success: true }
+    revalidatePath("/admin/courses");
+    return { success: true };
   } catch (error) {
-    return { error: "Đã xảy ra lỗi khi xóa khóa học." }
+    console.error("Error deleting course:", error);
+    return { error: "Đã xảy ra lỗi khi xóa khóa học" };
   }
 }
 
+export async function getStudentCourses(studentId: string) {
+  try {
+    const enrollments = await db.enrollment.findMany({
+      where: {
+        studentId,
+      },
+      include: {
+        course: {
+          include: {
+            teacher: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    image: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        class: true,
+      },
+      orderBy: {
+        enrolledAt: "desc",
+      },
+    });
+
+    return { enrollments };
+  } catch (error) {
+    console.error("Error fetching student courses:", error);
+    return { error: "Đã xảy ra lỗi khi lấy danh sách khóa học của học viên" };
+  }
+}
