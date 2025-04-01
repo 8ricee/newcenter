@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
@@ -9,10 +8,26 @@ import { Role } from "@prisma/client";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+          role: Role.STUDENT, // Default role for Google sign-in is STUDENT
+        };
+      },
     }),
     CredentialsProvider({
       name: "credentials",
@@ -37,6 +52,7 @@ export const authOptions: NextAuthOptions = {
           credentials.password,
           user.password
         );
+
         if (!isPasswordValid) {
           return null;
         }
@@ -46,46 +62,50 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          image: user.image,
         };
       },
     }),
   ],
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
   callbacks: {
-    async jwt({ token, user }) {
-      // Khi login bằng Credentials
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && session) {
+        // Update the JWT if the session is updated
+        return { ...token, ...session.user };
+      }
+
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
+        token.role = user.role;
+        token.image = user.image;
       }
-
-      // Khi login bằng Google, gán mặc định là STUDENT nếu chưa có
-      if (!token.role) {
-        const existingUser = await db.user.findUnique({
-          where: { email: token.email as string },
-        });
-
-        if (existingUser?.id) {
-          token.id = existingUser.id;
-        }
-
-        token.role = existingUser?.role || Role.STUDENT;
-      }
-
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as Role;
+        session.user.role = token.role as string;
+        session.user.image = token.image as string | null;
       }
       return session;
+    },
+    async signIn({ user, account }) {
+      // For Google sign-in, create student profile if it doesn't exist
+      if (account?.provider === "google") {
+        const existingUser = await db.user.findUnique({
+          where: { id: user.id },
+          include: { student: true },
+        });
+
+        if (existingUser && !existingUser.student) {
+          await db.student.create({
+            data: {
+              userId: existingUser.id,
+            },
+          });
+        }
+      }
+      return true;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,

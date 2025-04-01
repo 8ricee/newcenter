@@ -128,7 +128,7 @@ export default async function CertificatesPage() {
                                 </Card>
                             ))}
                     </div>
-                </TabsContent>
+                </TabsContent>  
 
                 <TabsContent value="pending" className="mt-6">
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

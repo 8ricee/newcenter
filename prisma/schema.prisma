@@ -60,15 +60,16 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  student       Student?
-  teacher       Teacher?
-  admin         Admin?
-  payments      Payment[]
-  passwordReset PasswordResetToken?
-  sentMessages  Message[]  @relation("SentMessages")
-  conversations ConversationParticipant[]
+  accounts       Account[]
+  sessions       Session[]
+  student        Student?
+  teacher        Teacher?
+  admin          Admin?
+  payments       Payment[]
+  passwordReset  PasswordResetToken?
+  sentMessages   Message[]                 @relation("SentMessages")
+  conversations  ConversationParticipant[]
+  unreadMessages UnreadMessage[]
 }
 
 model Account {
@@ -116,192 +117,214 @@ model PasswordResetToken {
 }
 
 model Student {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  phoneNumber   String?
-  dateOfBirth   DateTime?
-  address       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  phoneNumber String?
+  dateOfBirth DateTime?
+  address     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  enrollments   Enrollment[]
-  attendances   Attendance[]
-  certificates  Certificate[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments  Enrollment[]
+  attendances  Attendance[]
+  certificates Certificate[]
 }
 
 model Teacher {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  phoneNumber   String?
-  bio           String?  @db.Text
-  specialties   String[]
-  education     String?
-  experience    Int?     // Years of experience
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  phoneNumber String?
+  bio         String?  @db.Text
+  specialties String[]
+  education   String?
+  experience  Int? // Years of experience
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courses       Course[]
-  classes       Class[]
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courses Course[]
+  classes Class[]
 }
 
 model Admin {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  department    String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  department String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Course {
-  id            String       @id @default(cuid())
-  title         String
-  description   String?      @db.Text
-  level         String
-  duration      Int          // Duration in weeks
-  lessons       Int          // Number of lessons
-  price         Decimal      @db.Decimal(10, 2)
-  status        CourseStatus @default(UPCOMING)
-  image         String?
-  teacherId     String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id          String       @id @default(cuid())
+  title       String
+  description String?      @db.Text
+  level       String
+  duration    Int // Duration in weeks
+  lessons     Int // Number of lessons
+  price       Decimal      @db.Decimal(10, 2)
+  status      CourseStatus @default(UPCOMING)
+  image       String?
+  teacherId   String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
-  teacher       Teacher?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
-  classes       Class[]
-  enrollments   Enrollment[]
-  certificates  Certificate[]
+  teacher      Teacher?      @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  classes      Class[]
+  enrollments  Enrollment[]
+  certificates Certificate[]
 }
 
 model Class {
-  id            String   @id @default(cuid())
-  name          String
-  courseId      String
-  teacherId     String
-  startDate     DateTime
-  endDate       DateTime
-  schedule      Json     // Store schedule as JSON: [{"day": "Monday", "startTime": "18:00", "endTime": "20:00"}]
-  room          String?
-  maxStudents   Int      @default(20)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  courseId    String
+  teacherId   String
+  startDate   DateTime
+  endDate     DateTime
+  schedule    Json // Store schedule as JSON: [{"day": "Monday", "startTime": "18:00", "endTime": "20:00"}]
+  room        String?
+  maxStudents Int      @default(20)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Restrict)
-  enrollments   Enrollment[]
-  sessions      ClassSession[]
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacher     Teacher        @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  enrollments Enrollment[]
+  sessions    ClassSession[]
 }
 
 model ClassSession {
-  id            String   @id @default(cuid())
-  classId       String
-  date          DateTime
-  startTime     String
-  endTime       String
-  topic         String?
-  description   String?  @db.Text
-  materials     String?  @db.Text
-  room          String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(cuid())
+  classId     String
+  date        DateTime
+  startTime   String
+  endTime     String
+  topic       String?
+  description String?  @db.Text
+  materials   String?  @db.Text
+  room        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
-  attendances   Attendance[]
+  class       Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  attendances Attendance[]
 }
 
 model Enrollment {
-  id            String           @id @default(cuid())
-  studentId     String
-  courseId      String
-  classId       String?
-  enrolledAt    DateTime         @default(now())
-  status        EnrollmentStatus @default(PENDING)
-  progress      Int              @default(0) // Progress in percentage
-  notes         String?          @db.Text
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id         String           @id @default(cuid())
+  studentId  String
+  courseId   String
+  classId    String?
+  enrolledAt DateTime         @default(now())
+  status     EnrollmentStatus @default(PENDING)
+  progress   Int              @default(0) // Progress in percentage
+  notes      String?          @db.Text
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
-  student       Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course        Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  class         Class?           @relation(fields: [classId], references: [id], onDelete: SetNull)
-  payments      Payment[]
+  student  Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  class    Class?    @relation(fields: [classId], references: [id], onDelete: SetNull)
+  payments Payment[]
 }
 
 model Attendance {
-  id            String           @id @default(cuid())
-  sessionId     String
-  studentId     String
-  status        AttendanceStatus @default(PRESENT)
-  notes         String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id        String           @id @default(cuid())
+  sessionId String
+  studentId String
+  status    AttendanceStatus @default(PRESENT)
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
-  session       ClassSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  student       Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
 model Certificate {
-  id            String   @id @default(cuid())
-  studentId     String
-  courseId      String
-  issueDate     DateTime @default(now())
-  certificateNumber String @unique
-  grade         String?
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String   @id @default(cuid())
+  studentId         String
+  courseId          String
+  issueDate         DateTime @default(now())
+  certificateNumber String   @unique
+  grade             String?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
-  id            String        @id @default(cuid())
-  userId        String
-  method        PaymentMethod
-  amount        Decimal       @db.Decimal(10, 2)
-  status        PaymentStatus @default(PENDING)
-  metadata      Json          // Store payment details as JSON
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id        String        @id @default(cuid())
+  userId    String
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(10, 2)
+  status    PaymentStatus @default(PENDING)
+  metadata  Json // Store payment details as JSON
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  enrollments   Enrollment[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments Enrollment[]
 }
 
 model Conversation {
-  id            String        @id @default(cuid())
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastMessageId String?  @unique
+  lastMessage   Message? @relation("LastMessage", fields: [lastMessageId], references: [id], onDelete: SetNull)
+  isGroup       Boolean  @default(false)
+  name          String?
 
-  participants  ConversationParticipant[]
-  messages      Message[]
+  participants   ConversationParticipant[]
+  messages       Message[]
+  unreadMessages UnreadMessage[]
 }
 
 model ConversationParticipant {
-  id             String       @id @default(cuid())
+  id             String   @id @default(cuid())
   conversationId String
   userId         String
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime @default(now())
 
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([conversationId, userId])
 }
 
 model Message {
-  id             String       @id @default(cuid())
+  id             String   @id @default(cuid())
   conversationId String
   senderId       String
-  content        String       @db.Text
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  content        String   @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  fileUrl        String?
+  fileName       String?
+  fileType       String?
 
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  conversation     Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender           User          @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  lastMessageConvo Conversation? @relation("LastMessage")
 }
 
+model UnreadMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+  count          Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+}
