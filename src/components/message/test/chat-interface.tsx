@@ -11,11 +11,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { formatDate, getInitials } from "@/lib/utils"
+import { formatDate, formatTime, getInitials, isMessageInSequence, needsDateDivider } from "@/lib/utils"
 import { markConversationAsRead, sendMessage, sendTypingNotification, uploadMessageFile } from "@/lib/actions/test/message"
-// import { toast } from "@/components/ui/use-toast" // Remove this import
-import { toast } from "sonner" // Add this import
-import { Loader2, Send, Paperclip, File, X } from "lucide-react"
+import { toast } from "sonner"
+import { Loader2, Send, Paperclip, File, X, ThumbsUp, Smile } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { pusherClient } from "@/lib/pusher"
 import { debounce } from "lodash"
@@ -37,6 +36,7 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
     const [fileToUpload, setFileToUpload] = useState<File | null>(null)
     const [filePreview, setFilePreview] = useState<string | null>(null)
     const [fileType, setFileType] = useState<string | null>(null)
+    const [clickedMessages, setClickedMessages] = useState<Record<string, boolean>>({})
     const scrollAreaRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const router = useRouter()
@@ -116,14 +116,16 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
 
             // Upload file if present
             if (fileToUpload) {
+                setUploadingFile(true)
                 const formData = new FormData()
                 formData.append("file", fileToUpload)
 
                 const uploadResult = await uploadMessageFile(formData)
 
                 if (uploadResult.error) {
-                    toast.error(uploadResult.error) // Updated toast usage
+                    toast.error(uploadResult.error)
                     setIsLoading(false)
+                    setUploadingFile(false)
                     return
                 }
 
@@ -135,24 +137,25 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
                 setFileToUpload(null)
                 setFilePreview(null)
                 setFileType(null)
+                setUploadingFile(false)
             }
 
             const result = await sendMessage({
                 conversationId: conversation.id,
                 senderId: currentUserId,
-                content: message.trim() || "Đã gửi một tệp đính kèm",
+                content: message.trim() || "",
                 fileUrl,
                 fileName,
                 fileType: fileTypeValue,
             })
 
             if (result.error) {
-                toast.error(result.error) // Updated toast usage
+                toast.error(result.error)
             } else {
                 setMessage("")
             }
         } catch (error) {
-            toast.error("Đã xảy ra lỗi khi gửi tin nhắn") // Updated toast usage
+            toast.error("Đã xảy ra lỗi khi gửi tin nhắn")
         } finally {
             setIsLoading(false)
         }
@@ -184,7 +187,7 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
 
         // Check file size (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
-            toast.error("Kích thước file không được vượt quá 10MB") // Updated toast usage
+            toast.error("Kích thước file không được vượt quá 10MB")
             return
         }
 
@@ -212,6 +215,13 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
         }
     }
 
+    const handleMessageClick = (messageId: string) => {
+        setClickedMessages(prev => ({
+            ...prev,
+            [messageId]: !prev[messageId]
+        }))
+    }
+
     // Check if any user is typing
     const typingUserIds = Object.keys(typingUsers).filter((id) => typingUsers[id])
     const typingParticipants = conversation.participants.filter((p: any) => typingUserIds.includes(p.userId))
@@ -237,8 +247,8 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
     }
 
     return (
-        <Card className="flex flex-col h-full gap-0">
-            <CardHeader className="flex flex-row items-center gap-4 py-4">
+        <Card className="flex flex-col h-full gap-0 border p-0 shadow-none">
+            <CardHeader className="flex flex-row items-center gap-4 py-4 border-b">
                 {isGroup ? (
                     <Avatar className="h-10 w-10 bg-primary">
                         <AvatarFallback>{conversation.name?.charAt(0) || "G"}</AvatarFallback>
@@ -252,81 +262,102 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
                     </Avatar>
                 )}
                 <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center">
                         <h3 className="font-semibold">{getConversationTitle()}</h3>
                         {isGroup && <Badge variant="outline">Nhóm</Badge>}
                     </div>
                     <p className="text-sm text-muted-foreground">{getConversationSubtitle()}</p>
                 </div>
             </CardHeader>
-            <Separator />
             <CardContent className="flex-1 p-0 flex flex-col">
-                <ScrollArea ref={scrollAreaRef} className="flex-1 p-4" style={{ maxHeight: '500px' }}>
-                    <div className="space-y-4">
+                <ScrollArea ref={scrollAreaRef} className="flex-1 px-4" style={{ maxHeight: '450px' }}>
+                    <div className="space-y-2">
                         {messages.length === 0 ? (
                             <div className="flex items-center justify-center h-full py-8">
                                 <p className="text-muted-foreground">Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!</p>
                             </div>
                         ) : (
-                            messages.map((msg: any) => {
+                            messages.map((msg: any, index: number) => {
                                 const isCurrentUser = msg.senderId === currentUserId
                                 const sender = conversation.participants.find((p: any) => p.userId === msg.senderId)?.user
+                                const previousMsg = index > 0 ? messages[index - 1] : null
+                                const isInSequence = isMessageInSequence(msg, previousMsg)
+                                const showDateDivider = needsDateDivider(msg, previousMsg)
 
                                 return (
-                                    <div key={msg.id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} gap-2`}>
-                                        {!isCurrentUser && (
-                                            <Avatar className="h-8 w-8 mt-1">
-                                                <AvatarImage src={sender?.image || ""} />
-                                                <AvatarFallback>{getInitials(sender?.name) || sender?.email?.charAt(0) || "U"}</AvatarFallback>
-                                            </Avatar>
+                                    <div key={msg.id}>
+                                        {showDateDivider && (
+                                            <div className="flex justify-center my-4">
+                                                <div className="px-3 py-1 rounded-full text-xs">
+                                                    {formatDate(msg.createdAt)}
+                                                </div>
+                                            </div>
                                         )}
-                                        <div
-                                            className={`max-w-[70%] rounded-lg p-3 break-words ${isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
-                                                }`}
-                                        >
-                                            {isGroup && !isCurrentUser && (
-                                                <p className="text-xs font-medium mb-1">{sender?.name || sender?.email || "Người dùng"}</p>
+
+                                        <div className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} gap-2 mb-1`}>
+                                            {!isCurrentUser && !isInSequence && (
+                                                <Avatar className="h-8 w-8 mt-1">
+                                                    <AvatarImage src={sender?.image || ""} />
+                                                    <AvatarFallback>{getInitials(sender?.name) || sender?.email?.charAt(0) || "U"}</AvatarFallback>
+                                                </Avatar>
                                             )}
 
-                                            {msg.fileUrl && msg.fileType?.startsWith("image/") ? (
-                                                <div className="mb-2">
-                                                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="block">
-                                                        <Image
-                                                            src={msg.fileUrl || "/placeholder.svg"}
-                                                            alt={msg.fileName || "Hình ảnh"}
-                                                            className="max-w-full rounded-md max-h-[300px] object-contain"
-                                                            width={500}
-                                                            height={300}
-                                                        />
-                                                    </a>
-                                                </div>
-                                            ) : msg.fileUrl ? (
-                                                <div className="flex items-center gap-2 mb-2 p-2 bg-background/50 rounded-md">
-                                                    <File className="h-5 w-5" />
-                                                    <a
-                                                        href={msg.fileUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-sm underline truncate max-w-[200px]"
-                                                    >
-                                                        {msg.fileName || "Tệp đính kèm"}
-                                                    </a>
-                                                </div>
-                                            ) : null}
+                                            {!isCurrentUser && isInSequence && (
+                                                <div className="w-8"></div>
+                                            )}
 
-                                            <p className="text-sm">{msg.content}</p>
-                                            <p
-                                                className={`text-xs mt-1 ${isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground"}`}
-                                            >
-                                                {formatDate(msg.createdAt)}
-                                            </p>
+                                            <div className={`flex flex-col ${isCurrentUser ? "items-end" : "items-start"} max-w-[70%]`}>
+                                                {isGroup && !isCurrentUser && !isInSequence && (
+                                                    <p className="text-xs font-medium mb-1 ml-1">{sender?.name || sender?.email || "Người dùng"}</p>
+                                                )}
+                                                <div
+                                                    className={`rounded-2xl px-3 py-2 ${isCurrentUser
+                                                        ? "bg-[#0084ff] text-white"
+                                                        : "bg-white border border-gray-200"
+                                                        } cursor-pointer`}
+                                                    onClick={() => handleMessageClick(msg.id)}
+                                                >
+                                                    {msg.fileUrl && msg.fileType?.startsWith("image/") ? (
+                                                        <div className="">
+                                                            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="block">
+                                                                <Image
+                                                                    src={msg.fileUrl || "/placeholder.svg"}
+                                                                    alt={msg.fileName || "Hình ảnh"}
+                                                                    className="max-w-full rounded-md max-h-[300px] object-contain"
+                                                                    width={500}
+                                                                    height={300}
+                                                                />
+                                                            </a>
+                                                        </div>
+                                                    ) : msg.fileUrl ? (
+                                                        <div className="flex items-center gap-2 mb-1 p-2 bg-background/50 rounded-md">
+                                                            <File className="h-5 w-5" />
+                                                            <a
+                                                                href={msg.fileUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-sm underline truncate max-w-[200px]"
+                                                            >
+                                                                {msg.fileName}
+                                                            </a>
+                                                        </div>
+                                                    ) : null}
+
+                                                    <p className="text-sm break-words">{msg.content}</p>
+                                                </div>
+
+                                                {clickedMessages[msg.id] && (
+                                                    <p className="text-[10px] mt-1 mx-1">
+                                                        {formatTime(msg.createdAt)}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )
                             })
                         )}
 
-                        {/* Typing indicator */}
                         {typingParticipants.length > 0 && (
                             <div className="flex justify-start gap-2">
                                 <Avatar className="h-8 w-8 mt-1">
@@ -337,18 +368,18 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
                                             "U"}
                                     </AvatarFallback>
                                 </Avatar>
-                                <div className="bg-muted rounded-lg p-3">
+                                <div className="border border-gray-200 rounded-2xl px-3 py-2">
                                     <div className="flex items-center space-x-1">
                                         <div
-                                            className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce"
+                                            className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
                                             style={{ animationDelay: "0ms" }}
                                         ></div>
                                         <div
-                                            className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce"
+                                            className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
                                             style={{ animationDelay: "300ms" }}
                                         ></div>
                                         <div
-                                            className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce"
+                                            className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
                                             style={{ animationDelay: "600ms" }}
                                         ></div>
                                     </div>
@@ -358,10 +389,9 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
                     </div>
                 </ScrollArea>
 
-                {/* File preview */}
                 {fileToUpload && (
-                    <div className="px-4 py-2 border-t">
-                        <div className="flex items-center justify-between bg-muted p-2 rounded-md">
+                    <div className="px-4 py-2 border-t bg-white">
+                        <div className="flex items-center justify-between bg-gray-100 p-2 rounded-md">
                             <div className="flex items-center gap-2">
                                 {filePreview ? (
                                     <div className="relative h-12 w-12">
@@ -374,8 +404,8 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
                                         />
                                     </div>
                                 ) : (
-                                    <div className="h-12 w-12 bg-background rounded-md flex items-center justify-center">
-                                        <File className="h-6 w-6 text-muted-foreground" />
+                                    <div className="h-12 w-12 bg-white rounded-md flex items-center justify-center border border-gray-200">
+                                        <File className="h-6 w-6 text-gray-400" />
                                     </div>
                                 )}
                                 <div className="truncate max-w-[200px]">
@@ -383,16 +413,17 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
                                     <p className="text-xs text-muted-foreground">{(fileToUpload.size / 1024).toFixed(1)} KB</p>
                                 </div>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={cancelFileUpload}>
+                            <Button variant="ghost" size="icon" onClick={cancelFileUpload} className="text-gray-500 hover:text-gray-700">
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
                     </div>
                 )}
 
-                <div className="p-4 border-t">
-                    <form onSubmit={handleSendMessage} className="flex gap-2">
+                <div className="p-3 border-t">
+                    <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -400,6 +431,7 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
                                         type="button"
                                         variant="ghost"
                                         size="icon"
+                                        className="text-gray-500 hover:text-gray-700"
                                         onClick={handleFileSelect}
                                         disabled={isLoading || uploadingFile}
                                     >
@@ -412,15 +444,27 @@ export function ChatInterface({ conversation, currentUserId }: ChatInterfaceProp
                             </Tooltip>
                         </TooltipProvider>
                         <Input
-                            placeholder="Nhập tin nhắn..."
+                            placeholder="Aa"
                             value={message}
                             onChange={handleMessageChange}
                             disabled={isLoading}
-                            className="flex-1"
+                            className="flex-1 rounded-full bg-gray-100 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                         />
-                        <Button type="submit" size="icon" disabled={isLoading || (message.trim() === "" && !fileToUpload)}>
-                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        </Button>
+
+                        {message.trim() === "" && !fileToUpload ? (
+                            <Button type="button" variant="ghost" size="icon" className="text-[#0084ff] hover:text-blue-700">
+                                <ThumbsUp className="h-5 w-5" />
+                            </Button>
+                        ) : (
+                            <Button
+                                type="submit"
+                                size="icon"
+                                disabled={isLoading}
+                                className="bg-transparent hover:bg-transparent text-[#0084ff] hover:text-blue-700"
+                            >
+                                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                            </Button>
+                        )}
                     </form>
                 </div>
             </CardContent>

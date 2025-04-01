@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { pusherServer } from "@/lib/pusher";
+import { put } from "@vercel/blob";
 import { v4 as uuidv4 } from "uuid";
 
 interface CreateConversationParams {
@@ -467,27 +468,6 @@ export async function uploadMessageFile(formData: FormData) {
       return { error: "Kích thước file không được vượt quá 10MB" };
     }
 
-    // For development, instead of using Vercel Blob which requires a token,
-    // we'll return a placeholder URL for images or pretend the file was uploaded
-    let placeholderUrl;
-    if (file.type.startsWith("image/")) {
-      // For images, use a placeholder image service
-      placeholderUrl = `https://picsum.photos/800/600?random=${Math.random()}`;
-    } else {
-      // For other files, use a generic file URL
-      placeholderUrl = `/api/files/${uuidv4()}-${file.name}`;
-    }
-
-    return {
-      success: true,
-      url: placeholderUrl,
-      fileName: file.name,
-      fileType: file.type,
-    };
-
-    // The Vercel Blob storage code is commented out since it requires a token
-    // Uncomment this when you have the BLOB_READ_WRITE_TOKEN configured
-    /*
     // Generate a unique filename
     const filename = `messages/${session.user.id}/${uuidv4()}-${file.name}`;
 
@@ -502,7 +482,6 @@ export async function uploadMessageFile(formData: FormData) {
       fileName: file.name,
       fileType: file.type,
     };
-    */
   } catch (error) {
     console.error("Error uploading file:", error);
     return { error: "Đã xảy ra lỗi khi tải lên file" };

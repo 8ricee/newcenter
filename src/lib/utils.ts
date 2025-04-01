@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -6,12 +7,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(date: Date | string) {
-  return new Date(date).toLocaleDateString("vi-VN", {
+  return new Date(date).toLocaleString("vi-VN", {
     day: "numeric",
     month: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "numeric",
+    hour12: true,
   });
 }
 
@@ -60,4 +62,43 @@ export function getFileIcon(fileType: string | null | undefined) {
     return "archive";
 
   return "file";
+}
+
+export function formatTime(date: Date | string) {
+  return new Date(date).toLocaleString("vi-VN", {
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+  });
+}
+
+// Check if messages are from the same sequence (same sender within timeThreshold)
+export function isMessageInSequence(
+  currentMsg: any,
+  previousMsg: any,
+  timeThresholdMinutes: number = 5
+) {
+  if (!previousMsg) return false;
+  if (currentMsg.senderId !== previousMsg.senderId) return false;
+
+  const currentTime = new Date(currentMsg.createdAt).getTime();
+  const previousTime = new Date(previousMsg.createdAt).getTime();
+
+  // Check if the messages are within the time threshold
+  return currentTime - previousTime < timeThresholdMinutes * 60 * 1000;
+}
+
+// Check if messages should have a date divider (time difference > timeThreshold)
+export function needsDateDivider(
+  currentMsg: any,
+  previousMsg: any,
+  timeThresholdMinutes: number = 20
+) {
+  if (!previousMsg) return false;
+
+  const currentTime = new Date(currentMsg.createdAt).getTime();
+  const previousTime = new Date(previousMsg.createdAt).getTime();
+
+  // Check if the time difference exceeds the threshold
+  return currentTime - previousTime > timeThresholdMinutes * 60 * 1000;
 }

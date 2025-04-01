@@ -3,7 +3,9 @@
 const nextConfig = {
     /* config options here */
     images: {
-        domains: ['picsum.photos'],
+        domains: [
+            'xqwdubchxsiniiy1.public.blob.vercel-storage.com'
+        ],
     }
 };
 
